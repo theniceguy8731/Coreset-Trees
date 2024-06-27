@@ -39,7 +39,7 @@ SOFTWARE.
 
 from coreset.decision_tree import dt_coreset
 from coreset.utils.formats import SparseData
-from data.datasets import scale_data, get_circles
+from data.datasets import scale_data, get_circles, get_air_quality,get_california_housing
 from sklearn.model_selection import train_test_split
 from experiments_common import evaluate_on_coreset, evaluate_on_full_data
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     # Note: in practice we get much smaller error than the given epsilon.
     # Tune the epsilon to get the desired coreset size and check for practical
     # error on the validation set.
-    epsilons = [0.04, 0.07, 0.1, 0.15]
+    epsilons = [0.02,0.04, 0.07, 0.1, 0.15]
     k = 20
     coreset_verbose = False # True for printing additional information
 
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     # hundreds of hyperparameters are checked, training a single decision
     # tree doesn't increase much the computational time, but allows to obtain
     # better coreset, increasing overall accuracy.
-    use_exact_bicriteria_values=[False, True]
+    use_exact_bicriteria_values=[True,False]
     for use_exact_bicriteria in use_exact_bicriteria_values:
         print("\nConstructing coresets using exact bicriteria: {}\n".format(
             use_exact_bicriteria))
