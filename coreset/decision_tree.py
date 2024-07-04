@@ -177,6 +177,7 @@ def dt_coreset(data, k, epsilon,
         coreset_dup = CoresetData.concatenate(
             [data.get_caratheodory_coreset(duplicate=True)
              for data in slices if len(data.X)])
+    # not being used in practice
     else:
         coreset_size = 4
         coreset = CoresetData.concatenate(

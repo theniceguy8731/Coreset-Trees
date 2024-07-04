@@ -39,13 +39,16 @@ SOFTWARE.
 
 from coreset.decision_tree import dt_coreset
 from coreset.utils.formats import SparseData
-from data.datasets import scale_data, get_circles, get_air_quality,get_gesture_phase
+from data.datasets import scale_data, get_circles, get_air_quality,get_moons
 from sklearn.model_selection import train_test_split
 from experiments_common import evaluate_on_coreset, evaluate_on_full_data
 
 if __name__ == "__main__":
     # Data
-    X, Y = get_air_quality(9000)
+    # save resutls csv
+    with open("results.csv", "w") as f:
+        f.write("epsilon,coreset_size,use_exact_bicriteria,full_data_error,uniform_sample_error,coreset_error,smoothed_coreset_error\n")
+    X, Y = get_air_quality(5000)
     X, Y = scale_data(X, Y)
     X_train, X_test, Y_train, Y_test = train_test_split(X, Y)
     data_train = SparseData(X_train, Y_train)
@@ -54,9 +57,11 @@ if __name__ == "__main__":
     # Note: in practice we get much smaller error than the given epsilon.
     # Tune the epsilon to get the desired coreset size and check for practical
     # error on the validation set.
-    epsilons = [0.01,0.04, 0.07, 0.1, 0.15,0.18,0.21]
-    k = 20
-    coreset_verbose = False # True for printing additional information
+    # epsilons = [0.04, 0.07, 0.1]
+    # 0.0213
+    epsilons = [0.0213,0.0172]
+    k = 100
+    coreset_verbose = True # True for printing additional information
 
     # Use_exact_bicriteria = True will result in training a single decision
     # tree on full data for evaluating problem complexity (approximating
@@ -77,7 +82,8 @@ if __name__ == "__main__":
             coreset, coreset_smoothed = dt_coreset(
                 data_train, k, epsilon, verbose=coreset_verbose,
                 use_exact_bicriteria=use_exact_bicriteria)
-
+            # pick a uniform random sample from the full train data of the same size as corese
+            uniform_sample = data_train.get_sample(coreset.size)
             # evaluation: training the models and calculating errors
             '''
             To obtain theoretically proven error, either one of two conditions
@@ -98,17 +104,37 @@ if __name__ == "__main__":
             in practice the original coreset also obtains good approximation
             for smaller values of epsilon.
             '''
-            error_full = evaluate_on_full_data(
-                X_train, Y_train, X_test, Y_test, k)
-            error_coreset = evaluate_on_coreset(
-                coreset, X_train, Y_train, X_test, Y_test, k)
-            error_coreset_smoothed = evaluate_on_coreset(
-                coreset_smoothed, X_train, Y_train, X_test, Y_test, k)
+            param_grid = {'max_leaf_nodes': [1000, 5000, 10000,50000]}
+            best_k_unif,error_unif = evaluate_on_coreset(
+                uniform_sample, X_train, Y_train, X_test, Y_test, param_grid)
+            best_k_full,error_full = evaluate_on_full_data(
+                X_train, Y_train, X_test, Y_test, param_grid)
+            best_k_coreset,error_coreset = evaluate_on_coreset(
+                coreset, X_train, Y_train, X_test, Y_test, param_grid)
+            best_k_smooth_coreset,error_coreset_smoothed = evaluate_on_coreset(
+                coreset_smoothed, X_train, Y_train, X_test, Y_test, param_grid)
+            # error_full = 2
+            # error_coreset = 2
+            # error_coreset_smoothed = 2
+            #
+            # for param in range(1000, 10001, 1000):
+            #     error_full = min(evaluate_on_full_data(X_train, Y_train, X_test, Y_test, param), error_full)
+            # for param in range(1000, 10001, 1000):
+            #     error_coreset = min(evaluate_on_coreset(coreset, X_train, Y_train, X_test, Y_test, param),
+            #                         error_coreset)
+            # for param in range(1000, 10001, 1000):
+            #     error_coreset_smoothed = min(
+            #         evaluate_on_coreset(coreset_smoothed, X_train, Y_train, X_test, Y_test, param),
+            #         error_coreset_smoothed)
 
             # printing the results
             print(("Using 100% of the training set ({} examples):\n" +
                    "\tTesting error (full data):\t\t{:.5f}").format(
                       len(X_train), error_full))
+            print(("Using of the training set " +
+                  " (uniform sample of examples):\n" +
+                  "\tTesting error (uniform sample):\t{:.5f}").format(
+                       error_unif))
             print(("Using {:.2f}% of the training set " +
                   " (coreset of {} examples):").format(
                       coreset.size / float(len(X_train)) * 100,
@@ -117,3 +143,6 @@ if __name__ == "__main__":
                   error_coreset))
             print("\tTesting error (smoothed coreset):\t{:.5f}".format(
                   error_coreset_smoothed))
+            # add the results to a csv file
+            with open("results.csv", "a") as f:
+                f.write("{},{},{},{},{},{}\n".format(epsilon,use_exact_bicriteria,error_full,error_unif,error_coreset,error_coreset_smoothed))

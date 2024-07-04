@@ -70,11 +70,11 @@ def convert_to_sklearn(A):
     '''
     # uses multi-treading
     # the original code runs O(n), which means that it will increase linearly with the size of the input data.
-    # with ThreadPoolExecutor() as executor:
-    #     X_ = [executor.submit(np.expand_dims, x, axis=-1) for x in np.meshgrid(*map(range, A.shape))]
-    #     X = np.concatenate([future.result() for future in X_], axis=-1).reshape((-1, A.ndim))
-    #     Y_ = executor.submit(A.T.flatten)
-    #     Y = Y_.result()
+    with ThreadPoolExecutor() as executor:
+        X_ = [executor.submit(np.expand_dims, x, axis=-1) for x in np.meshgrid(*map(range, A.shape))]
+        X = np.concatenate([future.result() for future in X_], axis=-1).reshape((-1, A.ndim))
+        Y_ = executor.submit(A.T.flatten)
+        Y = Y_.result()
 
     X = np.concatenate([np.expand_dims(x, axis=-1)
                         for x in np.meshgrid(*map(range, A.shape))],
