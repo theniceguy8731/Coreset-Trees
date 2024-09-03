@@ -77,14 +77,14 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import RandomForestRegressor
 from coreset.utils.booster import Fast_Caratheodory
-from lightgbm import LGBMRegressor
+# from lightgbm import LGBMRegressor
 
 
 class SparseData:
     ''' Sparse signal data '''
-    def __init__(self, X, Y, uid=None, valid=None):
+    def __init__(self, X, Y, W = None, uid=None, valid=None):
         self.X, self.Y, self.uid, self.valid = X, Y, uid, valid
-        self.weights = None
+        self.weights = W
         self.curr_dim = None
         self.set_curr_dim_and_sort(0)
 
@@ -142,25 +142,26 @@ class SparseData:
     def fit_dt(self, sample_weight, k, ModelClass=DecisionTreeRegressor):
         ''' Fits a decision tree with predefined parameters.
             A single changeable parameter: number of leaves = k '''
-        model = ModelClass(max_leaf_nodes=k)
+        model = ModelClass(max_leaf_nodes=k,n_jobs=-1)
         return model.fit(self.X, self.Y, sample_weight=sample_weight)
 
-    def fit_lgb(self, sample_weight, k, n_estimators=100):
+    def fit_lgb(self, k, n_estimators=100):
         ''' Fits a gradient boosted trees model with predefined parameters.
             Goal is to produce a k-segmentation.
             n_estimator trees are fitted each with k/n_estimators leaves '''
         model = LGBMRegressor(num_leaves=k//n_estimators,
-                              n_estimators=n_estimators)
+                              n_estimators=n_estimators,n_jobs=-1)
         #model = ModelClass(max_depth=20, max_leaf_nodes=k)
         return model.fit(self.X, self.Y)
 
 
-    def fit_rf(self, sample_weight, k, n_estimators=100):
+    def fit_rf(self, k, n_estimators=100):
         ''' Fits a random forest model with predefined parameters.
             Goal is to produce a k-segmentation.
             n_estimator trees are fitted each with k/n_estimators leaves '''
+        print(k//n_estimators)
         model = RandomForestRegressor(max_leaf_nodes = k//n_estimators,
-                                      n_estimators=n_estimators)
+                                      n_estimators=n_estimators,n_jobs=-1)
         return model.fit(self.X, self.Y)
 
     def predict_dt(self, model):

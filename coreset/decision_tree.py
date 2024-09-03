@@ -45,8 +45,10 @@ from coreset.utils.partition_recursive import (
     balanced_partition, bicriteria)
 
 def dt_coreset(data, k, epsilon,
-               use_caratheodory=True, use_exact_bicriteria=False,
-               verbose=False, return_slices=False):
+               use_caratheodory=True,
+               use_exact_bicriteria=False,
+               verbose=False,
+               return_slices=False):
     '''
     Returns an epsilon-coreset for k-segmentation of the data
 
@@ -137,10 +139,10 @@ def dt_coreset(data, k, epsilon,
     if verbose:
         print("bicriteria: epsilon={} sigma={}".format(
             epsilon, sigma_approx))
-        print("bicriteria segments :", bicriteria_segments_count)
+        print("bicriteria segments: ", bicriteria_segments_count)
         print(("balanced partition: " +
-               "alpha={:.5f}, beta={:.5f}," +
-               "gamma={:.5f}, sigma={:.5f}:").format(
+               "alpha = {:.5f}, beta = {:.5f}," +
+               "gamma = {:.5f}, sigma = {:.5f}:").format(
             alpha, beta, gamma, sigma))
 
     fast_coreset = (data.X.ndim == 2) # for 2D data

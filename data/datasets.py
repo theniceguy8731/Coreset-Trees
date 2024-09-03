@@ -45,7 +45,11 @@ from PIL import Image
 from sklearn.datasets import (fetch_california_housing, make_circles,
                               make_moons, make_blobs)
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
 from line_profiler import profile
+
+#####################################################################################################################################
+#####################################################################################################################################
 
 
 def convert_to_sklearn(A):
@@ -128,6 +132,8 @@ def quantize_data(X, Y, bins):
     unique_idx = np.unique(X, axis=0, return_index=True)[-1]
     return X[unique_idx, :], Y[unique_idx]
 
+#####################################################################################################################################
+#####################################################################################################################################
 
 def get_circles(n_points, n_bins, factor=0.4, random_state=1):
     ''' Generaties an artificial dataset consisting of circles '''
@@ -144,10 +150,10 @@ def get_circles(n_points, n_bins, factor=0.4, random_state=1):
     function returns the binned data and labels as a finite ordered list.
     '''
 
-    X, Y = make_circles(n_points, noise=0.2, factor=factor,
+    X, y = make_circles(n_points, noise=0.2, factor=factor,
                         random_state=random_state)
-    X, Y = quantize_data(X, Y, n_bins)
-    return X, Y
+    X, y = quantize_data(X, y, n_bins)
+    return X, y
 
 
 def get_moons(n_points, n_bins, random_state=1):
@@ -187,6 +193,8 @@ def get_blobs(n_points, n_bins, random_state=1):
     X, Y = quantize_data(X, Y, n_bins)
     return X, Y
 
+#####################################################################################################################################
+#####################################################################################################################################
 
 def get_image_data(filepath, ymin=None, ymax=None, xmin=None, xmax=None,
                    sklearn_format=True):
@@ -218,57 +226,6 @@ def get_image_data(filepath, ymin=None, ymax=None, xmin=None, xmax=None,
 class DatasetType(Enum):
     RECONSTRUCTION = 1  # missing values reconstruction
     REGRESSION = 2  # simple regression
-
-
-def convert_to_dataset_type(X, Y, n_bins, dataset_type):
-    '''
-        The dataset is transformed into one of the two forms:
-        1. Missing values reconstruction task.
-            - The task is to predict missing values in the features matrix X.
-            - The original targets Y are not used.
-            - The returned value consists of all combination of indices i, j
-              in the matrix X and actual values to be predicted in the vector Y.
-        2. Regression task on an input signal:
-            - The task is to predict the original value Y given two input
-              features that are arranged as a signal using data quantization.
-    '''
-    '''
-    #Alon Latman
-    Function performing preprocessing on input datasets X and Y and returning the preprocessed data.
-    The n_bins and dataset_type parameters control the type of preprocessing applied to the data.
-    The scale_data function, is called with the input datasets X and Y.
-    If n_bins is not None, the quantize_data function is called with the input datasets X and Y and the n_bins parameter, 
-    and the resulting transformed datasets are returned.
-    If dataset_type is equal to the value DatasetType.RECONSTRUCTION, the convert_to_sklearn function is called with the
-    transformed X dataset, and the resulting transformed data is returned as the X dataset. The original Y dataset is
-    discarded, and a new Y dataset is created for the task of predicting image (signal) coordinates from image (signal) 
-    values.
-    If dataset_type is equal to the value DatasetType.REGRESSION, the input X dataset is transformed by selecting the
-    two columns with the most unique values and returning them as the X dataset. The original Y dataset is returned as
-    is.
-    If dataset_type has any other value, a ValueError is raised.
-    '''
-
-    def count_unique_values_in_columns(data):
-        data_sorted = np.sort(data, axis=0)
-        return (data_sorted[1:, :] != data_sorted[:-1, :]).sum(axis=0) + 1
-
-    X, Y = scale_data(X, Y)
-    if n_bins is not None:
-        X, Y = quantize_data(X, Y, n_bins)
-    if dataset_type == DatasetType.RECONSTRUCTION:
-        # discarding original Y and creating new Y for the task of predicting
-        # image(signal) coordinates --> image(signal) value
-        X, Y = convert_to_sklearn(X)
-    elif dataset_type == DatasetType.REGRESSION:
-        # selecting 2 features with unique valurs to build a signal
-        # can use PCA instead as well
-        uniques_per_column = count_unique_values_in_columns(X)
-        best_columns_idx = np.argsort(uniques_per_column)[:-3:-1]
-        X = X[:, best_columns_idx]
-    else:
-        raise ValueError(dataset_type)
-    return X, Y
 
 
 def get_california_housing(
@@ -353,3 +310,55 @@ def get_air_quality(
             .fillna(0))
     X, Y = data.values[:, 1:], data.values[:, 0]
     return convert_to_dataset_type(X, Y, n_bins, dataset_type)
+
+#####################################################################################################################################
+#####################################################################################################################################
+def convert_to_dataset_type(X, Y, n_bins, dataset_type):
+    '''
+        The dataset is transformed into one of the two forms:
+        1. Missing values reconstruction task.
+            - The task is to predict missing values in the features matrix X.
+            - The original targets Y are not used.
+            - The returned value consists of all combination of indices i, j
+              in the matrix X and actual values to be predicted in the vector Y.
+        2. Regression task on an input signal:
+            - The task is to predict the original value Y given two input
+              features that are arranged as a signal using data quantization.
+    '''
+    '''
+    #Alon Latman
+    Function performing preprocessing on input datasets X and Y and returning the preprocessed data.
+    The n_bins and dataset_type parameters control the type of preprocessing applied to the data.
+    The scale_data function, is called with the input datasets X and Y.
+    If n_bins is not None, the quantize_data function is called with the input datasets X and Y and the n_bins parameter, 
+    and the resulting transformed datasets are returned.
+    If dataset_type is equal to the value DatasetType.RECONSTRUCTION, the convert_to_sklearn function is called with the
+    transformed X dataset, and the resulting transformed data is returned as the X dataset. The original Y dataset is
+    discarded, and a new Y dataset is created for the task of predicting image (signal) coordinates from image (signal) 
+    values.
+    If dataset_type is equal to the value DatasetType.REGRESSION, the input X dataset is transformed by selecting the
+    two columns with the most unique values and returning them as the X dataset. The original Y dataset is returned as
+    is.
+    If dataset_type has any other value, a ValueError is raised.
+    '''
+
+    def count_unique_values_in_columns(data):
+        data_sorted = np.sort(data, axis=0)
+        return (data_sorted[1:, :] != data_sorted[:-1, :]).sum(axis=0) + 1
+
+    X, Y = scale_data(X, Y)
+    if n_bins is not None:
+        X, Y = quantize_data(X, Y, n_bins)
+    if dataset_type == DatasetType.RECONSTRUCTION:
+        # discarding original Y and creating new Y for the task of predicting
+        # image(signal) coordinates --> image(signal) value
+        X, Y = convert_to_sklearn(X)
+    elif dataset_type == DatasetType.REGRESSION:
+        # selecting 2 features with unique valurs to build a signal
+        # can use PCA instead as well
+        uniques_per_column = count_unique_values_in_columns(X)
+        best_columns_idx = np.argsort(uniques_per_column)[:-3:-1]
+        X = X[:, best_columns_idx]
+    else:
+        raise ValueError(dataset_type)
+    return X, Y
